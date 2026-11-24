@@ -2,8 +2,8 @@
 so nothing leaves this machine), and only the owner is told."""
 import json, os, sys, tempfile
 from pathlib import Path
-os.environ["CLIPKONTRAST_DATA"] = tempfile.mkdtemp(prefix="pc-upd-")
-os.environ.update(CLIPKONTRAST_UPDATE_CHECK="1", DATABASE_URL="", CLIPKONTRAST_ACCOUNTS="0", CLIPKONTRAST_PUBLIC_URL="http://127.0.0.1:8765", CLIPKONTRAST_AI_KEY="", CLIPKONTRAST_AI_MODELS="")
+os.environ["CLIPCREST_DATA"] = tempfile.mkdtemp(prefix="pc-upd-")
+os.environ.update(CLIPCREST_UPDATE_CHECK="1", DATABASE_URL="", CLIPCREST_ACCOUNTS="0", CLIPCREST_PUBLIC_URL="http://127.0.0.1:8765", CLIPCREST_AI_KEY="", CLIPCREST_AI_MODELS="")
 sys.path.insert(0, ".")
 from fastapi.testclient import TestClient
 from studio import config, db, server, updates
@@ -41,14 +41,15 @@ gh = {"top": "", "refs_code": 200, "compare": None}
 def refs(sha):
     return (b"001e# service=git-upload-pack\n0000015b" + sha.encode() + b" HEAD\x00multi_ack thin-pack\n003f"
             + sha.encode() + b" refs/heads/main\n0000")
-def fake_get(url, timeout=None, headers=None, params=None):
-    asked.append(url)
+follows = []
+def fake_get(url, timeout=None, headers=None, params=None, follow_redirects=False):
+    asked.append(url); follows.append(follow_redirects)
     if url.endswith("/info/refs"):
         return R(gh["refs_code"], content=refs(gh["top"]) if gh["top"] else b"")
     return gh["compare"] or R(403, {"message": "rate limit"})
 updates.httpx.get = fake_get
 here = updates.RUNNING
-check("the version ClipKontrast started on is remembered", len(here), 40)
+check("the version ClipCrest started on is remembered", len(here), 40)
 NEWER, NEWEST = "1" * 40, "2" * 40
 two = R(200, {"ahead_by": 2, "commits": [
     {"sha": "aaaaaaa1", "commit": {"message": "Connect TikTok in one click\n\nlong text", "committer": {"date": "2026-11-15T10:00:00Z"}}},
@@ -61,9 +62,12 @@ check("it goes to the address git itself uses, not the API", asked[0], f"https:/
 
 asked.clear(); gh.update(top=NEWER, compare=two)
 got = updates.check(force=True)
-check("a new commit is noticed while ClipKontrast is running, with no restart", (got["behind"], got["latest"], got["current"], got["restart"]), (2, "1111111", here[:7], False))
+check("a new commit is noticed while ClipCrest is running, with no restart", (got["behind"], got["latest"], got["current"], got["restart"]), (2, "1111111", here[:7], False))
 check("newest change first, one line each, with its date", [(n["title"], n["date"]) for n in got["notes"]],
       [("Captions always in English", "2026-11-16"), ("Connect TikTok in one click", "2026-11-15")])
+check("both questions follow a renamed repository to its new address", (len(follows) >= 2, all(follows)), (True, True))
+check("it looks at ClipCrest's own repository unless told otherwise",
+      updates.REPO if not os.environ.get("CLIPCREST_UPDATE_REPO") else "Ahmed-Islam-AI/clipcrest", "Ahmed-Islam-AI/clipcrest")
 asked.clear()
 for _ in range(5):
     updates.check(force=True)
@@ -99,8 +103,8 @@ c = TestClient(server.app, base_url="http://127.0.0.1:8765")
 st = c.get("/api/status").json()
 check("the owner's dashboard gets the notice", (st["update"] or {}).get("behind"), 2)
 updates.ON = False
-check("CLIPKONTRAST_UPDATE_CHECK=0: never asks, never tells", (updates.check(force=True), c.get("/api/status").json()["update"]), (None, None))
+check("CLIPCREST_UPDATE_CHECK=0: never asks, never tells", (updates.check(force=True), c.get("/api/status").json()["update"]), (None, None))
 
 print("ALL PASSED" if not fails else f"{len(fails)} failed")
-import shutil; db.engine.dispose(); shutil.rmtree(os.environ["CLIPKONTRAST_DATA"], ignore_errors=True); shutil.rmtree(fake, ignore_errors=True)
+import shutil; db.engine.dispose(); shutil.rmtree(os.environ["CLIPCREST_DATA"], ignore_errors=True); shutil.rmtree(fake, ignore_errors=True)
 sys.exit(1 if fails else 0)

@@ -33,7 +33,7 @@ def rejects_caption_value(call):
 
 
 def main(data):
-    os.environ.update(CLIPKONTRAST_DATA=data, DATABASE_URL="", CLIPKONTRAST_ACCOUNTS="0")
+    os.environ.update(CLIPCREST_DATA=data, DATABASE_URL="", CLIPCREST_ACCOUNTS="0")
     from studio import auth, brain, creators, ctx, db, jobs, render, roman, server
 
     db.init()

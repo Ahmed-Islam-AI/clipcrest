@@ -1,4 +1,4 @@
-"""Earn (paid clipping campaigns) against a throwaway ClipKontrast server. Usage: test_earn.py <base url> <project root> <python exe>"""
+"""Earn (paid clipping campaigns) against a throwaway ClipCrest server. Usage: test_earn.py <base url> <project root> <python exe>"""
 import io
 import os
 import subprocess

@@ -1,7 +1,7 @@
 """Earn details that are easy to break: handles with dots, and what a campaign's state says."""
 import os, sys, tempfile, time
 from types import SimpleNamespace as NS
-os.environ.update(CLIPKONTRAST_DATA=tempfile.mkdtemp(prefix="ck-states-"), DATABASE_URL="")
+os.environ.update(CLIPCREST_DATA=tempfile.mkdtemp(prefix="ck-states-"), DATABASE_URL="")
 sys.path.insert(0, ".")
 from studio import earn
 fails = []

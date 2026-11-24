@@ -1,11 +1,11 @@
-"""No limits by default on your own ClipKontrast: many recordings at once (each kept with its own creator), five videos
+"""No limits by default on your own ClipCrest: many recordings at once (each kept with its own creator), five videos
 at once, any number of creators. Runs against the code directly, with its own empty data folder."""
 import os, sys, tempfile
-os.environ["CLIPKONTRAST_DATA"] = tempfile.mkdtemp(prefix="pc-lim-")
-for k in ("CLIPKONTRAST_MAX_LIVE_PER_USER", "CLIPKONTRAST_MAX_JOBS_PER_USER", "CLIPKONTRAST_MAX_UPLOAD_MB", "CLIPKONTRAST_MAX_VIDEO_HOURS",
-          "CLIPKONTRAST_MAX_LIVE_HOURS", "CLIPKONTRAST_MAX_USER_GB", "CLIPKONTRAST_MAX_CREATORS"):
+os.environ["CLIPCREST_DATA"] = tempfile.mkdtemp(prefix="pc-lim-")
+for k in ("CLIPCREST_MAX_LIVE_PER_USER", "CLIPCREST_MAX_JOBS_PER_USER", "CLIPCREST_MAX_UPLOAD_MB", "CLIPCREST_MAX_VIDEO_HOURS",
+          "CLIPCREST_MAX_LIVE_HOURS", "CLIPCREST_MAX_USER_GB", "CLIPCREST_MAX_CREATORS"):
     os.environ.pop(k, None)
-os.environ.update(DATABASE_URL="", CLIPKONTRAST_MAX_LIVE="20")
+os.environ.update(DATABASE_URL="", CLIPCREST_MAX_LIVE="20")
 sys.path.insert(0, ".")
 from studio import auth, config, creators, ctx, db, live, load
 db.init()
@@ -39,5 +39,5 @@ with ctx.as_user(u.id):
     check("the same creator is not recorded twice at once", "already being recorded" in again, True)
 
 print("ALL PASSED" if not fails else f"{len(fails)} failed")
-import shutil; db.engine.dispose(); shutil.rmtree(os.environ["CLIPKONTRAST_DATA"], ignore_errors=True)
+import shutil; db.engine.dispose(); shutil.rmtree(os.environ["CLIPCREST_DATA"], ignore_errors=True)
 sys.exit(1 if fails else 0)

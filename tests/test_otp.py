@@ -19,9 +19,9 @@ def check(name, got, want):
 
 data = tempfile.mkdtemp(prefix="ck-otp-")
 log_path = os.path.join(data, "server.log")
-env = {**os.environ, "CLIPKONTRAST_DATA": data, "CLIPKONTRAST_PORT": str(PORT), "CLIPKONTRAST_PUBLIC_URL": BASE, "DATABASE_URL": "",
-       "CLIPKONTRAST_ACCOUNTS": "1", "CLIPKONTRAST_VERIFY_EMAIL": "1", "CLIPKONTRAST_SMTP_HOST": "", "CLIPKONTRAST_FETCH_MODEL": "0",
-       "CLIPKONTRAST_UPDATE_CHECK": "0", "CLIPKONTRAST_AUTO_RELOAD": "0", "PYTHONUNBUFFERED": "1"}
+env = {**os.environ, "CLIPCREST_DATA": data, "CLIPCREST_PORT": str(PORT), "CLIPCREST_PUBLIC_URL": BASE, "DATABASE_URL": "",
+       "CLIPCREST_ACCOUNTS": "1", "CLIPCREST_VERIFY_EMAIL": "1", "CLIPCREST_SMTP_HOST": "", "CLIPCREST_FETCH_MODEL": "0",
+       "CLIPCREST_UPDATE_CHECK": "0", "CLIPCREST_AUTO_RELOAD": "0", "PYTHONUNBUFFERED": "1"}
 log = open(log_path, "w")
 srv = subprocess.Popen([sys.executable, "-m", "studio.server"], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
 

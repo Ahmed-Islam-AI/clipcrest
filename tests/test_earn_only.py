@@ -17,9 +17,9 @@ def check(name, got, want):
 
 
 data = tempfile.mkdtemp(prefix="ck-earnonly-")
-env = {**os.environ, "CLIPKONTRAST_DATA": data, "CLIPKONTRAST_PORT": str(PORT), "CLIPKONTRAST_PUBLIC_URL": BASE, "DATABASE_URL": "",
-       "CLIPKONTRAST_ACCOUNTS": "1", "CLIPKONTRAST_EARN_ONLY": "1", "CLIPKONTRAST_VERIFY_EMAIL": "0", "CLIPKONTRAST_FETCH_MODEL": "0",
-       "CLIPKONTRAST_UPDATE_CHECK": "0", "CLIPKONTRAST_AUTO_RELOAD": "0", "CLIPKONTRAST_DOWNLOAD_URL": "https://example.com/dl.zip"}
+env = {**os.environ, "CLIPCREST_DATA": data, "CLIPCREST_PORT": str(PORT), "CLIPCREST_PUBLIC_URL": BASE, "DATABASE_URL": "",
+       "CLIPCREST_ACCOUNTS": "1", "CLIPCREST_EARN_ONLY": "1", "CLIPCREST_VERIFY_EMAIL": "0", "CLIPCREST_FETCH_MODEL": "0",
+       "CLIPCREST_UPDATE_CHECK": "0", "CLIPCREST_AUTO_RELOAD": "0", "CLIPCREST_DOWNLOAD_URL": "https://example.com/dl.zip"}
 srv = subprocess.Popen([sys.executable, "-m", "studio.server"], cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 try:
     for _ in range(60):
@@ -40,7 +40,7 @@ try:
     check("Earn still works", c.put("/api/earn/profile", json={"upi": "ab@okaxis", "whatsapp": "9876543210", "x": "@a"}, headers=ORIGIN).status_code, 200)
     p = c.get("/api/public").json()
     check("public settings say Earn-only", (p["earn_only"], p["download_url"]), (True, "https://example.com/dl.zip"))
-    check("the home page is Earn on the Earn-only website", "Earn with ClipKontrast" in c.get("/").text, True)
+    check("the home page is Earn on the Earn-only website", "Earn with ClipCrest" in c.get("/").text, True)
     check("the clip maker's page is at /clip-maker and carries the download link", "https://example.com/dl.zip" in c.get("/clip-maker").text, True)
     subprocess.run([sys.executable, "-m", "studio.admin", "grant", "u@example.com"], cwd=ROOT, env=env, capture_output=True)
     c2 = httpx.Client(base_url=BASE, timeout=30)

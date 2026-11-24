@@ -5,9 +5,10 @@ import os
 import sys
 import tempfile
 
-os.environ["CLIPKONTRAST_DATA"] = tempfile.mkdtemp(prefix="pc-local-")
-os.environ.update(DATABASE_URL="", CLIPKONTRAST_ACCOUNTS="0", CLIPKONTRAST_AI_PROVIDER="gemini", CLIPKONTRAST_AI_MODELS="", CLIPKONTRAST_AI_KEY="",
-                  CLIPKONTRAST_AI_KEY_FILE="", CLIPKONTRAST_AI_BASE_URL="", CLIPKONTRAST_PUBLIC_URL="http://127.0.0.1:8765")
+os.environ["CLIPCREST_DATA"] = tempfile.mkdtemp(prefix="pc-local-")
+os.environ.update(DATABASE_URL="", CLIPCREST_ACCOUNTS="0", CLIPCREST_AI_PROVIDER="gemini", CLIPCREST_AI_MODELS="", CLIPCREST_AI_KEY="",
+                  CLIPCREST_AI_KEY_FILE="", CLIPCREST_AI_BASE_URL="", CLIPCREST_PUBLIC_URL="http://127.0.0.1:8765",
+                  CLIPCREST_EARN_URL="", CLIPCREST_LOCAL_EARN="", CLIPCREST_CONTACT_EMAIL="")
 sys.path.insert(0, ".")
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -28,6 +29,7 @@ def check(name, got, want=True):
 
 # ---- no sign-in anywhere
 check("the dashboard opens with no sign-in", c.get("/app").status_code, 200)
+check("the dashboard is called ClipCrest", "ClipCrest" in c.get("/app").text.split("</title>")[0], True)
 check("the front page goes straight to the dashboard", (c.get("/").status_code, c.get("/").headers.get("location")), (303, "/app"))
 check("the sign-in page goes to the dashboard", (c.get("/login").status_code, c.get("/signup").status_code, c.get("/reset").status_code), (303, 303, 303))
 st = c.get("/api/status").json()
@@ -37,6 +39,21 @@ check("nobody can make an account", c.post("/api/auth/signup", json={"email": "x
 check("...or sign in", c.post("/api/auth/login", json={"email": "x@example.com", "password": "test-pass-123"}, headers=ORIGIN).status_code, 404)
 check("the owner's things work", c.post("/api/creators", json={"name": "Someone"}, headers=ORIGIN).status_code, 200)
 check("the owner cannot delete themself", c.post("/api/account/delete", json={"confirm": st["user"]["email"]}, headers=ORIGIN).status_code, 409)
+
+# ---- Earn: hidden on your own computer unless there is somewhere to send people
+st, pub = c.get("/api/status").json(), c.get("/api/public").json()
+check("with no Earn website set, the dashboard is told there is no Earn", (st["links"]["earn"], st["earn_url"], pub["earn_url"]), (None, None, None))
+check("the public settings carry a contact address, empty when none is set", pub["contact"], "")
+check("the Earn page is simply not there (not a redirect to itself)", (c.get("/earn").status_code, c.get("/earn").headers.get("location")), (404, None))
+check("...and is left out of the sitemap", "/earn<" in c.get("/sitemap.xml").text, False)
+config.EARN_URL = "https://earn.example.com"
+st, pub = c.get("/api/status").json(), c.get("/api/public").json()
+check("with an Earn website set, Earn points there", (st["links"]["earn"], st["earn_url"], pub["earn_url"]), ("https://earn.example.com/earn",) * 3)
+check("...and this copy's own Earn address sends people to it", (c.get("/earn").status_code, c.get("/earn").headers.get("location")), (303, "https://earn.example.com/earn"))
+config.EARN_URL = ""
+os.environ["CLIPCREST_LOCAL_EARN"] = "1"
+check("CLIPCREST_LOCAL_EARN=1 shows this copy's own Earn page", (c.get("/api/status").json()["links"]["earn"], c.get("/earn").status_code), ("/earn", 200))
+os.environ["CLIPCREST_LOCAL_EARN"] = ""
 
 # ---- with no sign-in, the address and the sender still have to be right
 check("our own page is believed even when the address in between was rewritten",
@@ -121,5 +138,5 @@ check("a failed test says why, without the key", (r.status_code, "wrong-key-0000
 print("ALL PASSED" if not fails else f"{len(fails)} failed")
 import shutil  # noqa: E402
 db.engine.dispose()
-shutil.rmtree(os.environ["CLIPKONTRAST_DATA"], ignore_errors=True)
+shutil.rmtree(os.environ["CLIPCREST_DATA"], ignore_errors=True)
 sys.exit(1 if fails else 0)
