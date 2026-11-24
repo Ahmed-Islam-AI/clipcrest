@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Earn admin · ClipKontrast</title>
+<title>Earn admin · ClipCrest</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,7 +117,7 @@ ol.steps{padding-left:18px;color:var(--dim);display:grid;gap:6px;margin:10px 0 0
 <body>
 <div class="app">
   <aside class="side">
-    <img src="/brand/logo-light.svg" alt="ClipKontrast">
+    <img src="/brand/logo-light.svg" alt="ClipCrest">
     <h4>Earn</h4>
     <div id="nav"></div>
     <div class="foot">
@@ -216,7 +216,7 @@ const drawCampaigns = () => `<div class="card" style="margin-top:0">${campTable(
 function toLocalInput(t) { if (!t) return ""; const d = new Date(t * 1000); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
 function openForm(c) {
   c = c || {title: "", creator_name: "", creator_url: "", tagline: "", category: "Gaming", brief: "", raw_rules: "Hook the viewer in the first 2 seconds, with text on screen\nBurned-in captions, readable on a phone\nCredit the creator and link their channel in the caption\nNo in-game radio or copyrighted music\nNo big story spoilers in the hook or thumbnail\nNo botted or bought views",
-    raw_sources: "", platforms: ["youtube", "instagram", "x"], required_tag: "", rate_per_1k: 20, min_views: 1000, max_per_clip: 0, budget: 45000, hold_days: 7, status: "draft", starts_at: null, ends_at: null, accent: "#C6F432"};
+    raw_sources: "", platforms: ["youtube", "instagram", "x"], required_tag: "", rate_per_1k: 20, min_views: 1000, max_per_clip: 0, budget: 45000, hold_days: 7, status: "draft", starts_at: null, ends_at: null, accent: "#3EE0CF"};
   const pl = new Set(c.platforms);
   $("#modal").innerHTML = `<div class="modal-bg" data-act="close-bg"><div class="modal"><div class="mh"><h3 style="font-size:18px">${c.id ? "Edit campaign" : "New campaign"}</h3><div style="display:flex;gap:8px">
       ${c.id ? `<button class="btn bad" data-act="delete" data-id="${esc(c.id)}">Delete</button>` : ""}<button class="btn" data-act="close">Cancel</button><button class="btn primary" form="cf">Save</button></div></div>
@@ -229,7 +229,7 @@ function openForm(c) {
       <div class="field"><label>One-line pitch</label><input name="tagline" value="${esc(c.tagline)}" maxlength="200" placeholder="Live-clip the GTA 6 launch streams and get paid per view"></div>
       <div class="field"><label>Brief</label><textarea name="brief" rows="5" placeholder="What to clip, what kind of moments work, tone, language…">${esc(c.brief)}</textarea></div>
       <div class="g2"><div class="field"><label>Rules (one per line)</label><textarea name="rules" rows="7">${esc(c.raw_rules ?? (c.rules || []).join("\n"))}</textarea></div>
-        <div class="field"><label>Streams and footage (one link per line)</label><textarea name="sources" rows="7" placeholder="https://youtube.com/@creator/streams&#10;https://drive.google.com/…">${esc(c.raw_sources ?? (c.sources || []).join("\n"))}</textarea><div class="hint">Only clippers who joined can see these.</div></div></div>
+        <div class="field"><label>Streams and footage (one link per line)</label><textarea name="sources" rows="7" placeholder="https://youtube.com/@creator/streams&#10;https://example.com/footage.mp4">${esc(c.raw_sources ?? (c.sources || []).join("\n"))}</textarea><div class="hint">Only clippers who joined can see these.</div></div></div>
       <div class="sect">Where and how clips are checked</div>
       <div class="field"><label>Platforms that pay</label><div class="checks">${Object.entries(PLAT).map(([k, l]) => `<label><input type="checkbox" name="platforms" value="${k}" ${pl.has(k) ? "checked" : ""}>${l}</label>`).join("")}</div></div>
       <div class="g2"><div class="field"><label>Required in the caption</label><input name="required_tag" value="${esc(c.required_tag)}" placeholder="@creatorhandle"><div class="hint">Checked automatically on YouTube.</div></div>
@@ -343,7 +343,7 @@ function drawSettings() {
     <ol class="steps"><li>Open <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">YouTube Data API v3</a> in Google Cloud and press <b>Enable</b>.</li>
       <li>Go to <b>APIs &amp; Services → Credentials → Create credentials → API key</b>.</li>
       <li>Restrict the key to <b>YouTube Data API v3</b>, then paste it above. The free quota covers about 500,000 view checks a day.</li></ol></div>
-    <div class="card" style="max-width:720px"><h3>Email confirmation (sign-up codes)</h3><p style="color:var(--dim)">Clippers must confirm their email before they can join or send clips. Emails are sent through SMTP: set <code>CLIPKONTRAST_SMTP_HOST</code>, <code>CLIPKONTRAST_SMTP_USER</code>, <code>CLIPKONTRAST_SMTP_PASSWORD</code>, <code>CLIPKONTRAST_MAIL_FROM</code> and <code>CLIPKONTRAST_VERIFY_EMAIL=1</code> in <code>.env</code>. Brevo, Resend or a Gmail app password all work. Sign in with Google needs no email confirmation.</p>
+    <div class="card" style="max-width:720px"><h3>Email confirmation (sign-up codes)</h3><p style="color:var(--dim)">Clippers must confirm their email before they can join or send clips. Emails are sent through SMTP: set <code>CLIPCREST_SMTP_HOST</code>, <code>CLIPCREST_SMTP_USER</code>, <code>CLIPCREST_SMTP_PASSWORD</code>, <code>CLIPCREST_MAIL_FROM</code> and <code>CLIPCREST_VERIFY_EMAIL=1</code> in <code>.env</code>. Brevo, Resend or a Gmail app password all work. Sign in with Google needs no email confirmation.</p>
     <div class="note ${S.mail ? "info" : "warn"}">${S.mail ? "Email sending is set up." : "Email sending isn't set up yet, so confirmation emails can't go out."}</div></div>`;
 }
 
