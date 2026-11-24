@@ -8,7 +8,7 @@ import collections
 import contextlib
 import contextvars
 
-_uid = contextvars.ContextVar("clipkontrast_uid", default=None)
+_uid = contextvars.ContextVar("clipcrest_uid", default=None)
 
 
 class NoUser(RuntimeError):

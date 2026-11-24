@@ -1,14 +1,14 @@
-"""Is there a newer ClipKontrast? Compares the version running here with the latest on GitHub, once a minute.
+"""Is there a newer ClipCrest? Compares the version running here with the latest on GitHub, once a minute.
 
-The version here is the git commit this folder was on when ClipKontrast started (read straight from .git, no git
-program needed). Each minute, in the background, ClipKontrast asks GitHub which commit the project is on now: one small
+The version here is the git commit this folder was on when ClipCrest started (read straight from .git, no git
+program needed). Each minute, in the background, ClipCrest asks GitHub which commit the project is on now: one small
 request to the same address `git` itself uses, which has no hourly allowance to run out of. Only when that commit
 changes does it ask GitHub's API what was added, to show the list. Nothing about this computer or its users is
 sent. The owner sees a notice in the dashboard within a minute or two, with no restart.
 
-    CLIPKONTRAST_UPDATE_REPO     where to look (default: the project's own repository; a fork points at itself)
-    CLIPKONTRAST_UPDATE_BRANCH   which branch (default: main)
-    CLIPKONTRAST_UPDATE_CHECK=0  never look"""
+    CLIPCREST_UPDATE_REPO     where to look (default: the project's own repository; a fork points at itself)
+    CLIPCREST_UPDATE_BRANCH   which branch (default: main)
+    CLIPCREST_UPDATE_CHECK=0  never look"""
 import re
 import threading
 import time
@@ -17,11 +17,11 @@ import httpx
 
 from . import config
 
-REPO = (config.env("CLIPKONTRAST_UPDATE_REPO") or "anistroz/clipkontrast").strip().strip("/")
-BRANCH = (config.env("CLIPKONTRAST_UPDATE_BRANCH") or "main").strip()
-ON = config.env("CLIPKONTRAST_UPDATE_CHECK", "1") != "0" and bool(re.fullmatch(r"[\w.\-]+/[\w.\-]+", REPO))
+REPO = (config.env("CLIPCREST_UPDATE_REPO") or "Ahmed-Islam-AI/clipcrest").strip().strip("/")
+BRANCH = (config.env("CLIPCREST_UPDATE_BRANCH") or "main").strip()
+ON = config.env("CLIPCREST_UPDATE_CHECK", "1") != "0" and bool(re.fullmatch(r"[\w.\-]+/[\w.\-]+", REPO))
 EVERY = 60
-UA = {"User-Agent": "ClipKontrast-update-check"}
+UA = {"User-Agent": "ClipCrest-update-check"}
 _state = {"checked": 0.0, "result": None, "seen": "", "notes": None}
 _lock = threading.Lock()
 _started = False
@@ -51,12 +51,14 @@ def current() -> str:
     return ""
 
 
-RUNNING = current()       # the code in memory: what ClipKontrast is actually running until it is restarted
+RUNNING = current()       # the code in memory: what ClipCrest is actually running until it is restarted
 
 
 def newest() -> str:
     """The commit the project is on right now, from the address git itself asks. "" if it cannot be told."""
-    r = httpx.get(f"https://github.com/{REPO}.git/info/refs", params={"service": "git-upload-pack"}, headers=UA, timeout=15)
+    # follow_redirects: a renamed or moved repository answers from its new address
+    r = httpx.get(f"https://github.com/{REPO}.git/info/refs", params={"service": "git-upload-pack"}, headers=UA, timeout=15,
+                  follow_redirects=True)
     if r.status_code != 200:
         return ""                            # a private repository, or GitHub is having a moment
     m = re.search(rb"([0-9a-f]{40}) refs/heads/" + re.escape(BRANCH).encode() + rb"[\x00\n]", r.content)
@@ -65,7 +67,7 @@ def newest() -> str:
 
 def _what_changed(here: str):
     """(how many commits newer, their first lines, newest first), or None if GitHub's API will not say right now."""
-    r = httpx.get(f"https://api.github.com/repos/{REPO}/compare/{here}...{BRANCH}", timeout=20,
+    r = httpx.get(f"https://api.github.com/repos/{REPO}/compare/{here}...{BRANCH}", timeout=20, follow_redirects=True,
                   headers={"Accept": "application/vnd.github+json", **UA})
     if r.status_code != 200:
         return None
@@ -118,7 +120,7 @@ def latest():
 
 
 def start():
-    """Look every minute, in the background, for as long as ClipKontrast runs."""
+    """Look every minute, in the background, for as long as ClipCrest runs."""
     global _started
     if not ON or _started:
         return

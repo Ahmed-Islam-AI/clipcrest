@@ -2,7 +2,7 @@
 
     python tests/run.py
 
-Starts ClipKontrast on a spare port with an empty, temporary data folder, runs the tests against it, then stops it and
+Starts ClipCrest on a spare port with an empty, temporary data folder, runs the tests against it, then stops it and
 deletes the folder. Your real data and your running server are never touched. No AI key is needed: the tests cover accounts, permissions, limits and the queue, not clip quality."""
 import os
 import shutil
@@ -14,20 +14,20 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PORT = int(os.environ.get("CLIPKONTRAST_TEST_PORT", "8799"))
+PORT = int(os.environ.get("CLIPCREST_TEST_PORT", "8799"))
 BASE = f"http://127.0.0.1:{PORT}"
 
 
 def main() -> int:
-    data = Path(tempfile.mkdtemp(prefix="clipkontrast-test-"))
-    env = {**os.environ, "CLIPKONTRAST_DATA": str(data), "CLIPKONTRAST_PORT": str(PORT), "CLIPKONTRAST_PUBLIC_URL": BASE,
-           "CLIPKONTRAST_HOST": "127.0.0.1", "CLIPKONTRAST_AUTO_RELOAD": "0", "DATABASE_URL": "",
-           "CLIPKONTRAST_ACCOUNTS": "1", "CLIPKONTRAST_FETCH_MODEL": "0", "CLIPKONTRAST_UPDATE_CHECK": "0",                   # these tests are about people signing in; tests/test_local.py covers the default
+    data = Path(tempfile.mkdtemp(prefix="clipcrest-test-"))
+    env = {**os.environ, "CLIPCREST_DATA": str(data), "CLIPCREST_PORT": str(PORT), "CLIPCREST_PUBLIC_URL": BASE,
+           "CLIPCREST_HOST": "127.0.0.1", "CLIPCREST_AUTO_RELOAD": "0", "DATABASE_URL": "",
+           "CLIPCREST_ACCOUNTS": "1", "CLIPCREST_FETCH_MODEL": "0", "CLIPCREST_UPDATE_CHECK": "0",                   # these tests are about people signing in; tests/test_local.py covers the default
            # nothing outside this machine is contacted: no AI, no email, no Google sign-in
-           "CLIPKONTRAST_SMTP_HOST": "", "CLIPKONTRAST_VERIFY_EMAIL": "1",   # the tests cover the confirm-your-email rule
+           "CLIPCREST_SMTP_HOST": "", "CLIPCREST_VERIFY_EMAIL": "1",   # the tests cover the confirm-your-email rule
            "GOOGLE_CLIENT_ID": "", "GOOGLE_CLIENT_SECRET": "", "GOOGLE_CLIENT_FILE": "", "PYTHONUNBUFFERED": "1",
-           "CLIPKONTRAST_AI_KEY": "", "CLIPKONTRAST_AI_KEY_FILE": "", "CLIPKONTRAST_AI_MODELS": "",
-           "CLIPKONTRAST_UPLOAD_PART_MB": "5", "CLIPKONTRAST_MAX_UPLOAD_MB": "64"}
+           "CLIPCREST_AI_KEY": "", "CLIPCREST_AI_KEY_FILE": "", "CLIPCREST_AI_MODELS": "",
+           "CLIPCREST_UPLOAD_PART_MB": "5", "CLIPCREST_MAX_UPLOAD_MB": "64"}
     log = data / "server.log"
     failed = []
     with log.open("w", encoding="utf-8") as out:
@@ -45,7 +45,7 @@ def main() -> int:
         else:
             print("The test server did not start.")
             return 1
-        only = os.environ.get("CLIPKONTRAST_TEST_ONLY", "")
+        only = os.environ.get("CLIPCREST_TEST_ONLY", "")
         runs = [("permissions", ["tests/test_permissions.py", BASE, str(ROOT), sys.executable]),
                 ("Earn: campaigns, links, cross-checks, budget and payouts", ["tests/test_earn.py", BASE, str(ROOT), sys.executable]),
                 ("Earn-only website: clip-making off, Earn on", ["tests/test_earn_only.py", str(ROOT)]),
@@ -58,6 +58,7 @@ def main() -> int:
                 ("big uploads in pieces", ["tests/test_upload_parts.py", BASE]),
                 ("AI services", ["tests/test_ai.py"]),
                 ("no sign-in, and the AI key from the dashboard", ["tests/test_local.py"]),
+                ("built React pages, and the old pages until then", ["tests/test_frontend_dist.py"]),
                 ("Hindi and Urdu captions in Roman letters", ["tests/test_roman.py"]),
                 ("turning captions off and back on", ["tests/test_captions.py"]),
                 ("connecting YouTube, Instagram and TikTok", ["tests/test_connect.py"]),

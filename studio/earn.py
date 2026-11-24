@@ -1,7 +1,7 @@
 """Earn: paid clipping campaigns.
 
 A creator or brand pays for a campaign with a fixed budget and a rate per 1,000 views. Clippers join, post clips
-on their own accounts and send in each link. ClipKontrast cross-checks every link (is it really their account,
+on their own accounts and send in each link. ClipCrest cross-checks every link (is it really their account,
 was it posted during the campaign, does the caption carry the required tag, has it been sent before), counts the
 views (by itself for YouTube, by hand or from a screenshot for the others), and an admin approves the clips.
 Approved money comes out of the budget; when the budget is used up the campaign closes by itself. Payouts are
@@ -59,12 +59,12 @@ def settings() -> dict:
 
 
 def youtube_key() -> str:
-    return settings()["youtube_key"] or config.env("CLIPKONTRAST_YOUTUBE_API_KEY", "")
+    return settings()["youtube_key"] or config.env("CLIPCREST_YOUTUBE_API_KEY", "")
 
 
 def public_settings() -> dict:
     k = youtube_key()
-    return {"youtube_ready": bool(k), "youtube_from_env": bool(config.env("CLIPKONTRAST_YOUTUBE_API_KEY", "")) and not settings()["youtube_key"],
+    return {"youtube_ready": bool(k), "youtube_from_env": bool(config.env("CLIPCREST_YOUTUBE_API_KEY", "")) and not settings()["youtube_key"],
             "youtube_hint": ("…" + k[-4:]) if k else ""}
 
 
@@ -485,7 +485,7 @@ def _image(data: bytes, dest: Path, size: int):
     except EarnError:
         raise
     except Exception:  # noqa: BLE001 - anything Pillow can't read is simply not an image
-        raise EarnError("That file isn't an image ClipKontrast can read. Use a PNG or JPG.")
+        raise EarnError("That file isn't an image ClipCrest can read. Use a PNG or JPG.")
     tmp = dest.with_suffix(".tmp")
     im.save(tmp, "JPEG", quality=85, optimize=True)
     tmp.replace(dest)

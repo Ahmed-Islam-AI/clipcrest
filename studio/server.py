@@ -1,4 +1,4 @@
-"""ClipKontrast web server. Run with:  python -m studio.server
+"""ClipCrest web server. Run with:  python -m studio.server
 
 Public pages:  /  /login  /signup          The app:  /app  (signed-in users only)
 Everything under /api, /media and /oauth needs a session, except /api/auth/* and /api/public."""
@@ -34,9 +34,12 @@ def _quiet(fn):
         print(f"  {e}", flush=True)
 
 
-app = FastAPI(title="ClipKontrast", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="ClipCrest", docs_url=None, redoc_url=None, openapi_url=None)
 WEB = config.ROOT / "web"
-OPEN = ("/api/auth/", "/pub/", "/api/public", "/api/earn/public/", "/earn/cover/", "/auth/google/", "/auth/verify", "/brand/", "/assets/", "/healthz", "/favicon.ico", "/robots.txt", "/sitemap.xml")
+# Pages are being moved to React one at a time. A page that has been built (web/dist/<page>.html, with its files in
+# web/dist/static) is served instead of the old one in web/. Until a page is built, the old page is served as before.
+DIST = WEB / "dist"
+OPEN = ("/api/auth/", "/pub/", "/api/public", "/api/earn/public/", "/earn/cover/", "/auth/google/", "/auth/verify", "/brand/", "/assets/", "/static/", "/healthz", "/favicon.ico", "/robots.txt", "/sitemap.xml")
 # On an Earn-only website these are the only addresses people other than admins may change things through.
 EARN_ONLY_WRITES = ("/api/auth/", "/api/earn/", "/api/account/delete", "/api/notifications/", "/api/feedback")
 PAGES = {"/": "landing.html", "/login": "auth.html", "/signup": "auth.html", "/reset": "reset.html",
@@ -55,7 +58,7 @@ BOOT = f"{int(time.time()) % 100000:x}"     # part of every sync token, so pages
 @app.on_event("startup")
 async def _more_threads():
     import anyio.to_thread
-    anyio.to_thread.current_default_thread_limiter().total_tokens = int(config.env("CLIPKONTRAST_REQUEST_THREADS", "64"))
+    anyio.to_thread.current_default_thread_limiter().total_tokens = int(config.env("CLIPCREST_REQUEST_THREADS", "64"))
 
 
 @app.on_event("startup")
@@ -69,7 +72,7 @@ def _startup():
     render.install_fonts()
     if _tools.missing():
         print("\n  " + _tools.HELP + "\n", flush=True)
-    if not transcribe.REMOTE and config.env("CLIPKONTRAST_FETCH_MODEL", "1") != "0":     # the speech model: fetched now, in the background, if it was never downloaded
+    if not transcribe.REMOTE and config.env("CLIPCREST_FETCH_MODEL", "1") != "0":     # the speech model: fetched now, in the background, if it was never downloaded
         from . import fetch_model
         threading.Thread(target=lambda: _quiet(fetch_model.ensure), daemon=True).start()
     jobs.start()
@@ -77,7 +80,7 @@ def _startup():
     posting.start()
     earn.start()                     # keeps YouTube view counts of campaign clips fresh
     from . import updates
-    updates.start()                  # looks for a newer ClipKontrast every minute, in the background
+    updates.start()                  # looks for a newer ClipCrest every minute, in the background
 
 
 # ================================================================ the gate: who is asking, and are they allowed
@@ -137,7 +140,7 @@ class Gate:
             # must have been asked for by its real address (a number, "localhost", or the address in settings),
             # so another website cannot reach it through a made-up name that points at this machine.
             if not _own_address(req.headers.get("host", "")):
-                return await deny(403, "Open ClipKontrast by its own address.")
+                return await deny(403, "Open ClipCrest by its own address.")
             if path == "/" or path == "/reset" or path.startswith("/auth/"):
                 return await deny(303, "", redirect="/app")
             if path.startswith("/api/auth/") and path != "/api/auth/me":
@@ -161,7 +164,7 @@ class Gate:
         # (creators, settings and alerts would otherwise make this computer fetch channels or send messages for anyone).
         if (config.EARN_ONLY and user and not user.is_admin and method not in ("GET", "HEAD")
                 and path.startswith("/api/") and not path.startswith(EARN_ONLY_WRITES)):
-            return await deny(403, "Clip-making runs on your own computer here. Download the free ClipKontrast clip studio from the Earn page, make your clips, then send the links back to earn.")
+            return await deny(403, "Clip-making runs on your own computer here. Download the free ClipCrest clip studio from the Earn page, make your clips, then send the links back to earn.")
         scope.setdefault("state", {})["user"] = user
         if user and path in ("/api/upload", "/api/upload/start") and method == "POST":
             # decided before a single byte of the file is accepted: verified, has a free slot, has disk space
@@ -238,7 +241,7 @@ class Compress:
 app.add_middleware(Compress)
 
 
-# Cloudflare's published address ranges (cloudflare.com/ips). CLIPKONTRAST_CDN_RANGES replaces them if they ever change.
+# Cloudflare's published address ranges (cloudflare.com/ips). CLIPCREST_CDN_RANGES replaces them if they ever change.
 _CDN_RANGES = None
 
 
@@ -246,7 +249,7 @@ def _from_cdn(addr: str) -> bool:
     global _CDN_RANGES
     import ipaddress
     if _CDN_RANGES is None:
-        ranges = config.env("CLIPKONTRAST_CDN_RANGES") or (
+        ranges = config.env("CLIPCREST_CDN_RANGES") or (
             "173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 "
             "190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 "
             "104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 "
@@ -261,25 +264,25 @@ def _from_cdn(addr: str) -> bool:
 
 def _ip(request: Request) -> str:
     """The visitor's address, used for rate limits. The connection's own address, or the one the proxy in front
-    reports (CLIPKONTRAST_TRUST_PROXY). If that connection comes from the CDN, the CDN's header names the real visitor
-    (CLIPKONTRAST_CLIENT_IP_HEADER). The header is believed only when the CDN really sent the request, so nobody can
+    reports (CLIPCREST_TRUST_PROXY). If that connection comes from the CDN, the CDN's header names the real visitor
+    (CLIPCREST_CLIENT_IP_HEADER). The header is believed only when the CDN really sent the request, so nobody can
     pick their own address by sending it themselves.
 
     The proxy adds the address it saw at the END of X-Forwarded-For. Everything before that was written by the
     visitor, so only the last entry is believed."""
     fwd = request.headers.get("x-forwarded-for", "")
-    peer = (fwd.split(",")[-1].strip() if fwd and config.env("CLIPKONTRAST_TRUST_PROXY") else "") or (request.client.host if request.client else "")
-    named = config.env("CLIPKONTRAST_CLIENT_IP_HEADER")
+    peer = (fwd.split(",")[-1].strip() if fwd and config.env("CLIPCREST_TRUST_PROXY") else "") or (request.client.host if request.client else "")
+    named = config.env("CLIPCREST_CLIENT_IP_HEADER")
     # Behind a Cloudflare Tunnel, every request arrives from cloudflared on this same machine, so the header is
-    # believed when the connection comes from this machine itself and CLIPKONTRAST_TUNNEL=1 says a tunnel is in use.
-    local = config.env("CLIPKONTRAST_TUNNEL") == "1" and peer in ("127.0.0.1", "::1")
+    # believed when the connection comes from this machine itself and CLIPCREST_TUNNEL=1 says a tunnel is in use.
+    local = config.env("CLIPCREST_TUNNEL") == "1" and peer in ("127.0.0.1", "::1")
     if named and request.headers.get(named) and (local or _from_cdn(peer)):
         return request.headers[named].split(",")[0].strip()[:64]
     return peer
 
 
 def _from_here(req, must_say=False) -> bool:
-    """Did this change come from ClipKontrast's own page, and not from another website?
+    """Did this change come from ClipCrest's own page, and not from another website?
 
     The browser's own answer is trusted first: it marks every request "same-origin" or not, and a web page cannot
     fake that mark. Comparing the page's address with the address the request arrived at is only the fallback,
@@ -294,8 +297,8 @@ def _from_here(req, must_say=False) -> bool:
 
 
 def _own_address(host: str) -> bool:
-    """Is this the address ClipKontrast is really reached by? A number (127.0.0.1, 192.168.1.20), "localhost", or the
-    host in CLIPKONTRAST_PUBLIC_URL."""
+    """Is this the address ClipCrest is really reached by? A number (127.0.0.1, 192.168.1.20), "localhost", or the
+    host in CLIPCREST_PUBLIC_URL."""
     import ipaddress
     name = host.strip().lower()
     name = name[1:name.index("]")] if name.startswith("[") and "]" in name else name.rsplit(":", 1)[0] if ":" in name else name
@@ -326,11 +329,16 @@ def _need_verified():
 
 
 # ================================================================ pages
+def _web(name):
+    """The file for a page: the built one in web/dist when there is one, else the old one in web/."""
+    return DIST / name if (DIST / name).is_file() else WEB / name
+
+
 def _page(name, shared=False):
     """A page. The browser keeps its copy and asks each time whether it has changed; when it has not, the answer
     is a few bytes ("not modified") instead of the whole page again. Signed-in pages are never kept by anything
     in between (a proxy or CDN), only by the person's own browser."""
-    return FileResponse(WEB / name, headers={"Cache-Control": ("public" if shared else "private") + ", no-cache"})
+    return FileResponse(_web(name), headers={"Cache-Control": ("public" if shared else "private") + ", no-cache"})
 
 
 _LANDING: dict = {}
@@ -346,8 +354,8 @@ def home():
 
 @app.get("/clip-maker")
 def landing():
-    f = WEB / "landing.html"
-    m = f.stat().st_mtime
+    f = _web("landing.html")
+    m = (f, f.stat().st_mtime)          # which file, and when it last changed: a new build is picked up at once
     if _LANDING.get("m") != m:
         html = f.read_text(encoding="utf-8").replace("{{SITE}}", config.PUBLIC_URL).replace("{{DOWNLOAD}}", config.DOWNLOAD_URL)
         _LANDING.update(m=m, html=html, etag='"' + hashlib.md5(html.encode()).hexdigest() + '"')
@@ -368,6 +376,8 @@ def sitemap():
     day = time.strftime("%Y-%m-%d")
     pages = [("/", "1.0", "weekly"), ("/earn", "0.9", "daily"), ("/clip-maker", "0.8", "monthly"), ("/signup", "0.8", "monthly"), ("/login", "0.4", "monthly"), ("/terms", "0.3", "yearly"),
              ("/privacy", "0.3", "yearly"), ("/acceptable-use", "0.2", "yearly")]
+    if earn_link() is None:          # this copy has no Earn page to list
+        pages = [p for p in pages if p[0] != "/earn"]
     body = "".join(f"<url><loc>{config.PUBLIC_URL}{u}</loc><lastmod>{day}</lastmod><changefreq>{c}</changefreq>"
                    f"<priority>{p}</priority></url>" for u, p, c in pages)
     return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -386,9 +396,9 @@ def reset_page():
 
 
 LEGAL = {
-    "privacy": ("Privacy Policy", "How ClipKontrast collects, uses and protects your data, including Google user data, cookies and your privacy rights."),
-    "terms": ("Terms of Service", "The terms for using ClipKontrast, the AI clipping tool for streams and videos: accounts, availability and liability."),
-    "acceptable-use": ("Acceptable Use Policy", "What you may and may not do with ClipKontrast, the AI stream clipping tool."),
+    "privacy": ("Privacy Policy", "How ClipCrest collects, uses and protects your data, including Google user data, cookies and your privacy rights."),
+    "terms": ("Terms of Service", "The terms for using ClipCrest, the AI clipping tool for streams and videos: accounts, availability and liability."),
+    "acceptable-use": ("Acceptable Use Policy", "What you may and may not do with ClipCrest, the AI stream clipping tool."),
 }
 
 
@@ -403,10 +413,10 @@ def legal_page(request: Request):
     contact = config.CONTACT_EMAIL
     who = (f'<a href="mailto:{_h.escape(contact)}">{_h.escape(contact)}</a>' if contact
            else "the contact details on our website")
-    name = _h.escape(config.LEGAL_NAME or "ClipKontrast")
+    name = _h.escape(config.LEGAL_NAME or "ClipCrest")
     law = (f"the laws of {_h.escape(config.LEGAL_COUNTRY)}" if config.LEGAL_COUNTRY
-           else "the laws of the country where ClipKontrast's operator is established")
-    out = (_LEGAL_HTML or (WEB / "legal.html").read_text(encoding="utf-8"))
+           else "the laws of the country where ClipCrest's operator is established")
+    out = (_LEGAL_HTML or _web("legal.html").read_text(encoding="utf-8"))
     for k, v in {"{{CONTACT}}": who, "{{PAGE}}": page, "{{PAGE_PATH}}": page, "{{SITE}}": _h.escape(config.PUBLIC_URL),
                  "{{NAME}}": name, "{{LAW}}": law, "{{TITLE}}": title, "{{DESC}}": desc}.items():
         out = out.replace(k, v)
@@ -434,11 +444,24 @@ def admin_earn_page(request: Request, rest: str = ""):
     return _page("earn-admin.html")
 
 
+def earn_link():
+    """Where the Earn button goes, or None when this copy has no Earn (the pages then hide it). A site with accounts has
+    its own Earn page. The downloaded app has no shared database, so it sends people to the public Earn website named
+    by EARN_URL; with CLIPCREST_LOCAL_EARN=1 it shows its own page instead (for trying Earn out)."""
+    if config.ACCOUNTS:
+        return "/earn"
+    if config.EARN_URL:
+        return config.EARN_URL + "/earn"
+    return "/earn" if config.env("CLIPCREST_LOCAL_EARN") == "1" else None
+
+
 @app.get("/earn")
 def earn_page():
-    # The downloaded app has no shared database, so its Earn button goes to the public Earn website.
-    if not config.ACCOUNTS and config.env("CLIPKONTRAST_LOCAL_EARN") != "1":
-        return RedirectResponse(config.EARN_URL + "/earn", 303)
+    link = earn_link()
+    if link is None:
+        raise HTTPException(404)
+    if not config.ACCOUNTS and config.env("CLIPCREST_LOCAL_EARN") != "1":
+        return RedirectResponse(link, 303)          # the public Earn website
     return _page("earn.html", shared=True)
 
 
@@ -470,6 +493,24 @@ def asset(name: str):
     return FileResponse(WEB / name, media_type="text/javascript", headers={"Cache-Control": "public, max-age=86400, stale-while-revalidate=604800"})
 
 
+# The type of each file is written out here rather than guessed: on Windows the guess can say "text/plain" for a
+# script, and the browser then refuses to run it.
+STATIC_TYPES = {"js": "text/javascript", "css": "text/css", "woff2": "font/woff2", "woff": "font/woff",
+                "svg": "image/svg+xml", "png": "image/png", "webp": "image/webp", "jpg": "image/jpeg",
+                "ico": "image/x-icon", "map": "application/json"}
+
+
+@app.get("/static/{name}")
+def static_file(name: str):
+    """The scripts, styles and fonts of the built pages. Their names change whenever their content does, so a browser
+    may keep them for a year."""
+    m = re.fullmatch(r"[\w.\-]+\.(" + "|".join(STATIC_TYPES) + ")", name)
+    f = DIST / "static" / name
+    if not m or ".." in name or not f.is_file():
+        raise HTTPException(404)
+    return FileResponse(f, media_type=STATIC_TYPES[m.group(1)], headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
 @app.get("/favicon.ico")
 def favicon():
     return RedirectResponse("/brand/favicon.svg", 308)
@@ -480,7 +521,8 @@ def favicon():
 def public_config():
     from . import mailer
     return {"google": auth.google_ready(), "mail": mailer.ready(), "verify_email": config.VERIFY_EMAIL,
-            "earn_only": config.EARN_ONLY, "download_url": config.DOWNLOAD_URL}
+            "earn_only": config.EARN_ONLY, "download_url": config.DOWNLOAD_URL, "earn_url": earn_link(),
+            "contact": config.CONTACT_EMAIL or ""}
 
 
 def _signed_in(request: Request, user, first: bool, redirect=None):
@@ -631,9 +673,9 @@ def status(request: Request):
     from . import notices
     from . import updates
     me_ = _me(request)
-    return {"user": auth.public(me_), "update": updates.latest() if me_.is_admin else None, "accounts": config.ACCOUNTS, "disk_full": load.disk_full(), "no_ffmpeg": bool(_tools.missing()), "links": {"repo": config.REPO_URL, "follow": config.FOLLOW_URL, "earn": ("/earn" if config.ACCOUNTS else config.EARN_URL + "/earn")}, "ai": usage.brief(), "unread": notices.unread(),
+    return {"user": auth.public(me_), "update": updates.latest() if me_.is_admin else None, "accounts": config.ACCOUNTS, "disk_full": load.disk_full(), "no_ffmpeg": bool(_tools.missing()), "links": {"repo": config.REPO_URL, "follow": config.FOLLOW_URL, "earn": earn_link()}, "ai": usage.brief(), "unread": notices.unread(),
             "tour": not accounts.settings()["tour_done"],
-            "earn_url": "/earn" if config.ACCOUNTS else config.EARN_URL + "/earn", "earn_only": config.EARN_ONLY,
+            "earn_url": earn_link(), "earn_only": config.EARN_ONLY,
             "youtube": accounts.youtube_ready(), "connect": {p: accounts.can_connect(p) for p in accounts.PLATFORM_NAMES}, "max_upload_mb": config.MAX_UPLOAD_MB, "upload_part_mb": config.UPLOAD_PART_MB, "max_batch": config.MAX_ACTIVE_JOBS_PER_USER,
             "styles": {k: v["label"] for k, v in render.STYLES.items()}, "layouts": render.LAYOUTS}
 
@@ -1048,7 +1090,7 @@ def clips_zip(ids: str = ""):
     except ValueError as e:
         raise HTTPException(400, str(e))
     from starlette.background import BackgroundTask
-    return FileResponse(f, filename=f"clipkontrast-clips-{len(pairs)}.zip", media_type="application/zip",
+    return FileResponse(f, filename=f"clipcrest-clips-{len(pairs)}.zip", media_type="application/zip",
                         headers={"Cache-Control": "private, no-store"}, background=BackgroundTask(lambda: f.unlink(missing_ok=True)))
 
 
@@ -1112,7 +1154,7 @@ def email_preview(request: Request, kind: str = "verify"):
     from . import mailer
     _admin(request)
     if kind == "reset":
-        page = mailer.preview("Reset your password", "Someone asked to reset the password for this ClipKontrast account. If that was you, choose a new one below.",
+        page = mailer.preview("Reset your password", "Someone asked to reset the password for this ClipCrest account. If that was you, choose a new one below.",
                               "Choose a new password", config.PUBLIC_URL + "/reset?t=example",
                               "The link works for one hour. If you didn't ask for this, ignore this email and your password stays the same.")
     else:
@@ -1126,10 +1168,10 @@ def test_email(request: Request):
     from . import mailer
     me_ = _admin(request)
     if not mailer.ready():
-        raise HTTPException(400, "No email service is set up yet. Add the CLIPKONTRAST_SMTP settings to .env first.")
-    mailer.send(me_.email, "ClipKontrast test email", "Your emails are working",
-                "This is a test from your ClipKontrast server. Account emails like this one will now reach people.",
-                "Open ClipKontrast", config.PUBLIC_URL + "/app", "You can ignore this message.")
+        raise HTTPException(400, "No email service is set up yet. Add the CLIPCREST_SMTP settings to .env first.")
+    mailer.send(me_.email, "ClipCrest test email", "Your emails are working",
+                "This is a test from your ClipCrest server. Account emails like this one will now reach people.",
+                "Open ClipCrest", config.PUBLIC_URL + "/app", "You can ignore this message.")
     return {"sent_to": me_.email}
 
 
@@ -1442,15 +1484,15 @@ def public_clip(token: str):
     return FileResponse(f, media_type="video/mp4", headers={"Cache-Control": "private, no-store"})
 
 
-# ---------------------------------------------------------------- where ClipKontrast keeps everything (Settings, Storage)
+# ---------------------------------------------------------------- where ClipCrest keeps everything (Settings, Storage)
 def _on_this_computer(request: Request) -> bool:
-    """Is the person sitting at the computer ClipKontrast runs on? Only then can a folder window be opened for them."""
+    """Is the person sitting at the computer ClipCrest runs on? Only then can a folder window be opened for them."""
     host = request.client.host if request.client else ""
-    if host not in ("127.0.0.1", "::1", "localhost") or config.env("CLIPKONTRAST_TRUST_PROXY"):
+    if host not in ("127.0.0.1", "::1", "localhost") or config.env("CLIPCREST_TRUST_PROXY"):
         return False
     # A tunnel (Cloudflare) running on this same computer also connects from 127.0.0.1, so a request from anywhere on
     # the internet would look local. The tunnel always adds its own headers, which a browser here never sends.
-    named = (config.env("CLIPKONTRAST_CLIENT_IP_HEADER") or "").strip().lower()
+    named = (config.env("CLIPCREST_CLIENT_IP_HEADER") or "").strip().lower()
     proxied = ("cf-connecting-ip", "cf-ray", "x-forwarded-for", "x-real-ip", "forwarded") + ((named,) if named else ())
     return not any(request.headers.get(h) for h in proxied)
 
@@ -1467,7 +1509,7 @@ def storage_open(request: Request):
     from . import storage
     _admin(request)
     if not _on_this_computer(request):
-        raise HTTPException(400, "The folder can only be opened on the computer ClipKontrast runs on.")
+        raise HTTPException(400, "The folder can only be opened on the computer ClipCrest runs on.")
     try:
         storage.open_folder()
     except OSError as e:
@@ -1480,7 +1522,7 @@ def storage_pick(request: Request):
     from . import storage
     _admin(request)
     if not _on_this_computer(request):
-        raise HTTPException(400, "Type the folder's path instead: a folder window can only be shown on the computer ClipKontrast runs on.")
+        raise HTTPException(400, "Type the folder's path instead: a folder window can only be shown on the computer ClipCrest runs on.")
     return {"path": storage.pick_folder()}
 
 
@@ -1547,7 +1589,7 @@ def test_alert():
         auth_problem = str(e)
     if auth_problem:
         raise HTTPException(429, auth_problem)
-    problems = alerts.send("ClipKontrast: test message. Alerts are working.")
+    problems = alerts.send("ClipCrest: test message. Alerts are working.")
     if problems:
         raise HTTPException(400, "; ".join(problems))
     return {"ok": True}
@@ -1802,7 +1844,7 @@ def earn_admin_owed(request: Request):
 def earn_admin_owed_csv(request: Request):
     _admin(request)
     return Response(earn.owed_csv(), media_type="text/csv",
-                    headers={"Content-Disposition": f'attachment; filename="clipkontrast-payouts-{time.strftime("%Y-%m-%d")}.csv"'})
+                    headers={"Content-Disposition": f'attachment; filename="clipcrest-payouts-{time.strftime("%Y-%m-%d")}.csv"'})
 
 
 @app.post("/api/admin/earn/payouts")
@@ -1825,20 +1867,20 @@ def earn_admin_save_settings(request: Request, body: dict = Body(...)):
 
 
 def main():
-    print(f"\n  ClipKontrast is running:  {config.PUBLIC_URL}\n")
+    print(f"\n  ClipCrest is running:  {config.PUBLIC_URL}\n")
     if not config.ACCOUNTS and (config.HTTPS or config.HOST not in ("127.0.0.1", "localhost", "::1")):
-        print("  Sign-in is off, so anyone who can reach this address can use ClipKontrast and its AI key.\n"
-              "  On a server other people can reach, set CLIPKONTRAST_ACCOUNTS=1 in .env.\n", flush=True)
-    if config.env("CLIPKONTRAST_OPEN_BROWSER") == "1":
+        print("  Sign-in is off, so anyone who can reach this address can use ClipCrest and its AI key.\n"
+              "  On a server other people can reach, set CLIPCREST_ACCOUNTS=1 in .env.\n", flush=True)
+    if config.env("CLIPCREST_OPEN_BROWSER") == "1":
         _open_browser_when_ready()
-    if config.env("CLIPKONTRAST_AUTO_RELOAD") == "1":
+    if config.env("CLIPCREST_AUTO_RELOAD") == "1":
         # restart by itself whenever the server code changes (pages in web/ never need a restart)
         uvicorn.run("studio.server:app", host=config.HOST, port=config.PORT, log_level="warning", backlog=4096, reload=True,
                     reload_dirs=[str(config.ROOT / "studio")], reload_includes=["*.py"],
-                    proxy_headers=bool(config.env("CLIPKONTRAST_TRUST_PROXY")), forwarded_allow_ips="*")
+                    proxy_headers=bool(config.env("CLIPCREST_TRUST_PROXY")), forwarded_allow_ips="*")
         return
     uvicorn.run(app, host=config.HOST, port=config.PORT, log_level="warning", backlog=4096,
-                proxy_headers=bool(config.env("CLIPKONTRAST_TRUST_PROXY")), forwarded_allow_ips="*")
+                proxy_headers=bool(config.env("CLIPCREST_TRUST_PROXY")), forwarded_allow_ips="*")
 
 
 if __name__ == "__main__":

@@ -136,7 +136,7 @@ earn_campaigns = sa.Table(                                                    # 
     sa.Column("starts_at", sa.Float),
     sa.Column("ends_at", sa.Float),
     sa.Column("has_cover", sa.Boolean, nullable=False, server_default=sa.false()),
-    sa.Column("accent", sa.String(9), nullable=False, server_default="#C6F432"),
+    sa.Column("accent", sa.String(9), nullable=False, server_default="#3EE0CF"),
     sa.Column("created_at", sa.Float, nullable=False),
     sa.Column("updated_at", sa.Float, nullable=False),
 )
