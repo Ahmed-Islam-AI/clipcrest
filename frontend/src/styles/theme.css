@@ -1,0 +1,209 @@
+/* ClipCrest theme: the one stylesheet every page imports.
+
+   TO CHANGE THE PALETTE, EDIT ONLY THE VALUES IN THE "APP TOKENS" BLOCK BELOW.
+   Everything after it (the shadcn names, the Tailwind utilities, the base styles) points at those
+   names, so the whole site follows. Do not put colour values anywhere else. */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Fonts are files in this project, not Google Fonts. Geist is the UI font; the other three are
+   for caption-style previews (font-anton, font-archivo, font-poppins with font-extrabold). */
+@import "@fontsource-variable/geist";
+@import "@fontsource/anton";
+@import "@fontsource/archivo-black";
+@import "@fontsource/poppins/800.css";
+
+/* The site is light only. Without this, the "dark:" classes inside the shadcn components would switch on
+   whenever the computer is in dark mode. They now apply only under a .dark class, which nothing sets. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------- APP TOKENS (palette: Riptide) */
+:root {
+  --brand: #3EE0CF;
+  --brand-hi: #7AEDE1;
+  --brand-press: #24C9B8;
+  --brand-ink: #04302D;      /* text on the brand colour, always */
+  --brand-soft: #E5FAF7;
+  --brand-line: #B3EEE6;
+  --brand-deep: #0B6A62;     /* brand-coloured text and focus rings on light backgrounds */
+
+  --frame: #0A1C29;          /* the dark sidebar and page frame */
+  --frame-2: #11293A;
+  --frame-3: #1A364A;
+  --frame-line: #183043;
+  --frame-text: #E7F2F4;
+  --frame-dim: #89A5B2;
+
+  --bg: #FFFFFF;             /* the light content card */
+  --muted: #F0F5F6;
+  --line: #E2EBED;
+  --line-2: #CFDCE0;
+  --text: #0C1E2A;
+  --dim: #4C6372;
+  --faint: #7D94A0;
+
+  --good: #08744F;
+  --good-soft: #E2F5EC;
+  --bad: #C42A3E;
+  --bad-soft: #FDECEE;
+  --warn: #9A5600;
+  --warn-soft: #FFF2DD;
+  --live: #DB2A40;           /* white text on it */
+
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 16px;
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------- shadcn names, mapped onto the app tokens */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--bg);
+  --card-foreground: var(--text);
+  --popover: var(--bg);
+  --popover-foreground: var(--text);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-ink);
+  --secondary: var(--muted);
+  --secondary-foreground: var(--text);
+  /* --muted is shared: in the app and in shadcn it means the same soft surface */
+  --muted-foreground: var(--dim);
+  --accent: var(--muted);
+  --accent-foreground: var(--text);
+  --destructive: var(--bad);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--brand-deep);
+  --radius: var(--r);
+
+  --sidebar: var(--frame);
+  --sidebar-foreground: var(--frame-text);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-ink);
+  --sidebar-accent: var(--frame-2);
+  --sidebar-accent-foreground: var(--frame-text);
+  --sidebar-border: var(--frame-line);
+  --sidebar-ring: var(--brand-hi);
+}
+
+/* Anything on the dark frame (the sidebar, the mobile drawer) gets this class: focus rings turn brand-hi. */
+.surface-frame {
+  --ring: var(--sidebar-ring);
+}
+
+/* ---------------------------------------------------------------- Tailwind utilities (bg-brand, text-dim, border-line ...) */
+@theme inline {
+  --font-sans: "Geist Variable", "Segoe UI", system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-anton: "Anton", Impact, sans-serif;
+  --font-archivo: "Archivo Black", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+
+  --color-brand: var(--brand);
+  --color-brand-hi: var(--brand-hi);
+  --color-brand-press: var(--brand-press);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+  --color-brand-deep: var(--brand-deep);
+  --color-frame: var(--frame);
+  --color-frame-2: var(--frame-2);
+  --color-frame-3: var(--frame-3);
+  --color-frame-line: var(--frame-line);
+  --color-frame-text: var(--frame-text);
+  --color-frame-dim: var(--frame-dim);
+  --color-bg: var(--bg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-text: var(--text);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-live: var(--live);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* rounded-sm 6px, rounded-md 8px, rounded-lg 12px, rounded-xl 16px */
+  --radius-sm: calc(var(--r-sm) - 2px);
+  --radius-md: var(--r-sm);
+  --radius-lg: var(--r);
+  --radius-xl: var(--r-lg);
+
+  --animate-live: live-pulse 1.3s ease-in-out infinite;
+  @keyframes live-pulse {
+    50% { opacity: 0.3; }
+  }
+}
+
+/* No shadows anywhere: the shadow utilities do not exist in this project. */
+@theme {
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+}
+
+/* ---------------------------------------------------------------- base */
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-background text-sm text-foreground;
+  }
+  ::selection {
+    background: var(--brand-line);
+    color: var(--brand-ink);
+  }
+}
+
+/* sonner draws its own shadow; the rule here is no shadows */
+[data-sonner-toast] {
+  box-shadow: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
