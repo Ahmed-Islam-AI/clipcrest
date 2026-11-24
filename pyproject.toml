@@ -1,5 +1,6 @@
 [project]
-name = "clipkontrast"
+name = "clipcrest"
+description = "Turn long videos and live streams into captioned vertical clips (Reels, Shorts, TikTok) on your own computer."
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [

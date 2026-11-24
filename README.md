@@ -1,8 +1,5 @@
-# ClipKontrast
+# ClipCrest
 
-> Based on PeakCut (MIT License). Rebranded and modified as ClipKontrast.
->
-> Guide by [@anistroz.ai](https://www.instagram.com/anistroz.ai/) (Instagram) and [@anistrozelite](https://www.youtube.com/@anistrozelite) (YouTube).
 > Screenshots ke saath poori guide: folder mein **`SETUP-GUIDE.html`** kholo.
 
 Lambi videos aur live streams se **captions wale vertical clips** (Reels / Shorts / TikTok) banao, apne hi computer pe.
@@ -10,17 +7,17 @@ Free hai, koi sign-in nahi chahiye.
 
 ## Apne PC pe kaise chalaye (3 steps)
 
-**1. Download karo.** [Yahan se download karo](https://drive.google.com/drive/folders/1BMRVHQ7vFiOQhX7m5j6kl7zmDWWRz7eq?usp=drive_link): Google Drive folder khulega, usme ClipKontrast ki ZIP aur setup guide dono hain.
+**1. Download karo.** [Yahan se download karo](https://github.com/Ahmed-Islam-AI/clipcrest/releases/latest): GitHub Releases page khulega, wahan se ClipCrest ki ZIP download karo.
 
 **2. Unzip karo, chhote folder mein.**
-- **Windows:** ZIP pe right-click karo, phir **Extract All**, aur folder ko `C:\ClipKontrast` pe rakho.
+- **Windows:** ZIP pe right-click karo, phir **Extract All**, aur folder ko `C:\ClipCrest` pe rakho.
   Desktop ya Downloads ke andar gehre folder mein mat rakhna: Windows lambe path pe speech model load nahi kar paata.
 - **Mac:** ZIP pe double-click karo aur folder ko apne home folder mein rakh do.
 
 **3. Start karo.**
-- **Windows:** `Start-ClipKontrast-Windows.bat` pe double-click karo.
+- **Windows:** `Start-ClipCrest-Windows.bat` pe double-click karo.
   "Windows protected your PC" aaye toh **More info** dabao, phir **Run anyway**.
-- **Mac:** `Start-ClipKontrast-Mac.command` pe right-click karo, phir **Open**, phir dobara **Open** (pehli baar hi aisa karna hai).
+- **Mac:** `Start-ClipCrest-Mac.command` pe right-click karo, phir **Open**, phir dobara **Open** (pehli baar hi aisa karna hai).
 - **Linux:** terminal mein `bash start-linux.sh` chalao.
 
 Pehli baar 5-10 minute lagenge: script khud Python, ffmpeg aur baaki zaroori cheezein install karegi, aur speech model
@@ -34,7 +31,7 @@ Jab tak app use kar rahe ho, kaali window (terminal) khuli rakhna. Use band karo
 AI key ke bina bhi clips bante hain, lekin sirf awaaz ki loudness dekh ke. Achhe clips ke liye:
 
 1. https://aistudio.google.com/apikey pe jao aur **Create API key** dabao (Google ki free key).
-2. ClipKontrast mein **Settings, AI** kholo, **Gemini** chuno, key paste karo, aur **Save and test** dabao.
+2. ClipCrest mein **Settings, AI** kholo, **Gemini** chuno, key paste karo, aur **Save and test** dabao.
 
 Phir YouTube, Twitch ya Kick ka link paste karo aur **Make clips** dabao.
 
@@ -43,7 +40,7 @@ Phir YouTube, Twitch ya Kick ka link paste karo aur **Make clips** dabao.
 | Problem | Kya karein |
 |---|---|
 | "winget is not available" | Microsoft Store se **App Installer** install karo, phir dobara chalao |
-| "DLL load failed ... too long" | Folder ko `C:\ClipKontrast` pe le jao aur dobara chalao |
+| "DLL load failed ... too long" | Folder ko `C:\ClipCrest` pe le jao aur dobara chalao |
 | Python install ke baad error | Window band karo aur `.bat` file dobara double-click karo |
 | Browser nahi khula | Khud kholo: http://127.0.0.1:8765 |
 | Mac: "cannot be opened" | Right-click karo, phir **Open** (double-click nahi) |
@@ -51,31 +48,14 @@ Phir YouTube, Twitch ya Kick ka link paste karo aur **Make clips** dabao.
 Zaroorat: Windows 10/11, macOS ya Linux, 8 GB RAM, lagbhag 3 GB khaali jagah. Video banne ka kaam tumhare
 computer pe hota hai, aur tumhari videos kahin upload nahi hoti.
 
----
-
-## Campaigns join karke paise kamao: [clipkontrast.com/earn](https://clipkontrast.com/earn)
-
-Clips banake post karo, aur un clips ke views ke hisaab se paise kamao, seedha UPI pe.
-
-1. **[clipkontrast.com/earn](https://clipkontrast.com/earn)** pe signup karo: email (6-digit OTP aayega) ya Google se.
-2. **Payout profile** bharo: UPI ID, WhatsApp number, aur apne YouTube / Instagram / X / TikTok handles.
-3. Koi live **campaign join** karo aur uske rules padho: kaunsa creator, kaunse platforms, kaunsa tag lagana hai, rate per 1,000 views.
-4. Isi app se clips banao aur **apne account se post** karo, caption mein campaign ka tag lagake.
-5. Clip ka **link website pe submit** karo. Hold period ke baad views gine jaate hain, admin approve karta hai, aur paise UPI pe aate hain.
-
-Rules simple hain: clip tumhare apne account se aur campaign shuru hone ke baad post hona chahiye, aur paid hone tak public rehna chahiye.
-Fake ya kharide hue views, edit kiye screenshots, ya kisi aur ka clip bhejoge toh kuch nahi milega aur account band ho sakta hai.
-
 ## Naya version kaise lein
 
-Naya ZIP download karo aur usi folder mein extract karke files replace kar do. Tumhari videos aur clips (`data` folder) safe rehti hain.
+[Releases page](https://github.com/Ahmed-Islam-AI/clipcrest/releases/latest) se naya ZIP download karo aur usi folder mein extract karke files replace kar do. Tumhari videos aur clips (`data` folder) safe rehti hain.
 Phir start file dobara chalao.
 
 ## Credits aur licence
 
-ClipKontrast PeakCut pe based hai, jo MIT License ke tahat open source hai (LICENSE file dekho).
+ClipCrest MIT License ke tahat open source hai (LICENSE file dekho).
 Caption fonts (`studio/fonts/`: Anton, Archivo Black, Poppins) SIL Open Font License ke tahat hain.
 
 Sirf wahi videos clip karo jo tumhari hain ya jinki permission hai, aur jahan post karte ho un sites ke rules follow karo.
-
-Guide by [@anistroz.ai](https://www.instagram.com/anistroz.ai/) · [@anistrozelite](https://www.youtube.com/@anistrozelite)
