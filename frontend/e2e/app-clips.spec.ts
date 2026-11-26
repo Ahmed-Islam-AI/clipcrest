@@ -176,12 +176,16 @@ test("[APP-EARN-02] Send to a paid campaign opens Earn with the clip's posted li
   await page.getByRole("button", { name: "Send to a paid campaign" }).first().click();
   expect((await popup).url()).toMatch(/\/earn#submit=https%3A%2F%2Fyoutube\.com%2Fshorts%2Fabcdefghijk$/);
   await expect(page.getByText("Opening Earn to send this clip")).toBeVisible();
-  // a clip with no posted link asks for it; an empty answer does nothing
+  // a clip with no posted link asks for it; an empty answer does nothing. The old page asked with the browser's own
+  // prompt (Q-13), the React page asks in a dialog of its own: either is answered here with nothing.
   const pages = context.pages().length;
   let asked = "";
   page.once("dialog", dlg => { asked = dlg.message(); void dlg.accept(""); });
   await page.getByRole("button", { name: "Send to a paid campaign" }).nth(2).click();
-  await expect.poll(() => asked).toContain("Paste the link to this clip after you posted it");
+  const ask = page.getByRole("dialog").filter({ hasText: "Paste the link to this clip after you posted it" });
+  await expect.poll(async () => asked || (await ask.count() ? await ask.innerText() : "")).toContain("Paste the link to this clip after you posted it");
+  if (!asked) await ask.getByRole("button", { name: "OK" }).click();
+  await expect(ask).toHaveCount(0);
   await page.waitForTimeout(500);
   expect(context.pages().length).toBe(pages);                       // nothing opened
 });
