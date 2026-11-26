@@ -1,5 +1,5 @@
 /* The app's frame: sidebar, top bar, addresses, the account menu, and what changes with sign-in on or off. */
-import { addCreator, createCreator, expect, FOLLOW, menu, menuItem, meButton, navItem, openApp, REPO, sidebar, test, title, uid } from "./fixtures";
+import { addCreator, createCreator, creatorItem, expect, FOLLOW, menu, menuItem, meButton, navItem, openApp, REPO, sidebar, test, title, uid } from "./fixtures";
 
 test.describe("frame and navigation", () => {
   test("[APP-SHELL-01, APP-SHELL-03, APP-NAV-01, APP-NAV-03, APP-NAV-06, APP-NAV-08, APP-NAV-14, APP-TOP-01, APP-TOP-02] Home shows the sidebar, title and greeting", async ({ app: page }) => {
@@ -56,8 +56,9 @@ test.describe("frame and navigation", () => {
     await expect(page.getByRole("heading", { level: 2, name: "Connected apps" })).toBeVisible();
   });
 
-  test.fixme("[APP-ROUTE-05, APP-ROUTE-01] /app/settings without a section tidies the address to the first section", async ({ page, user, mode }) => {
+  test("[APP-ROUTE-05, APP-ROUTE-01] /app/settings without a section tidies the address to the first section (Q-02)", async ({ page, user, mode }) => {
     // Old-UI bug: the address becomes /app/settings/clips (the creator tab name leaks into the settings address).
+    // Passes only on the React app, which fixes it.
     void user;
     await openApp(page, "/app/settings", "Settings");
     await expect(page).toHaveURL(mode === "local" ? /\/app\/settings\/ai$/ : /\/app\/settings\/profile$/);
@@ -87,7 +88,7 @@ test.describe("frame and navigation", () => {
     await openApp(page, "/app", "Home");
     await navItem(page, "All videos").click();
     await expect(title(page)).toHaveText("All videos");
-    await navItem(page, name).click();
+    await creatorItem(page, name).click();
     await expect(title(page)).toHaveText(name);
     await expect(page).toHaveURL(new RegExp(`/app/creators/${id}$`));
     await page.getByRole("tab", { name: /Setup/ }).click();
@@ -95,6 +96,7 @@ test.describe("frame and navigation", () => {
     await meButton(page).click();
     await menuItem(page, "Settings").click();
     await expect(page).toHaveURL(/\/app\/settings\/\w+$/);
+    await expect(menu(page)).toBeHidden();        // it fades out; a click while it fades would close it instead
     await meButton(page).click();
     await menuItem(page, "AI usage").click();
     await expect(page).toHaveURL(/\/app\/usage$/);
@@ -123,13 +125,14 @@ test.describe("frame and navigation", () => {
     await expect(title(page)).toHaveText("Home");
   });
 
-  test.fixme("[APP-ROUTE-01, APP-TOP-04] a Settings section never leaks into a creator page (Q-04)", async ({ page, user }) => {
+  test("[APP-ROUTE-01, APP-TOP-04] a Settings section never leaks into a creator page (Q-04)", async ({ page, user }) => {
     // Old-UI bug Q-04: after /app/settings/apps, clicking a creator shows no tab and the address /app/creators/<id>/apps.
+    // Passes only on the React app, which fixes it.
     void user;
     const name = "Leak " + uid();
     const id = await createCreator(page.request, name);
     await openApp(page, "/app/settings/apps", "Settings");
-    await navItem(page, name).click();
+    await creatorItem(page, name).click();
     await expect(title(page)).toHaveText(name);
     await expect(page).toHaveURL(new RegExp(`/app/creators/${id}$`));
     await expect(page.getByRole("tab", { name: /Clips/ })).toHaveAttribute("aria-selected", "true");
@@ -274,6 +277,7 @@ test.describe("account menu", () => {
     await me.click();
     await menuItem(page, "AI usage").click();
     await expect(title(page)).toHaveText("AI usage");
+    await expect(menu(page)).toBeHidden();
     await me.click();
     await menuItem(page, "Settings").click();
     await expect(title(page)).toHaveText("Settings");
