@@ -7,7 +7,8 @@ finished pages are built into `web/dist`, which is committed, so people who run 
 
 1. Start the Python server as usual, from the project folder: `python -m studio.server` (port 8765).
 2. In this folder, the first time: `npm ci`. Then: `npm run dev`.
-3. Open <http://localhost:5173/gallery.html> for the design system, or <http://localhost:5173/app> for the app.
+3. Open <http://localhost:5173/gallery.html> for the design system, <http://localhost:5173/app> for the app, or any
+   other page by its usual address (`/`, `/login`, `/reset`, `/terms`, `/earn`, `/admin`, `/admin/earn` ...).
 
 The dev server sends `/api/`, `/media/`, `/brand/`, `/assets/`, `/auth/`, `/oauth/`, `/pub/`, `/earn/cover/`,
 `/healthz` and `/favicon.ico` on to the Python server, so the pages talk to real data. If the Python server runs on
