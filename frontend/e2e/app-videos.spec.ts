@@ -65,8 +65,9 @@ test.describe("Home", () => {
     await expect(page.getByRole("tab", { name: /Setup/ })).toHaveAttribute("aria-selected", "true");
   });
 
-  test.fixme("[APP-HOME-06] Connect a posting account opens Connected apps (Q-08)", async ({ app: page, mode }) => {
+  test("[APP-HOME-06] Connect a posting account opens Connected apps (Q-08)", async ({ app: page, mode }) => {
     // Old-UI bug Q-08: the step opens Settings with no section, so an admin lands on AI instead of Connected apps.
+    // Passes only on the React app, which fixes it.
     test.skip(mode === "accounts", "the owner is the admin who sees the wrong section");
     await page.getByRole("button", { name: /Connect a posting account/ }).click();
     await expect(page).toHaveURL(/\/app\/settings\/apps$/);
