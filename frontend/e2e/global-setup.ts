@@ -16,6 +16,9 @@ export default function globalSetup() {
   // a steady 10 Mbit/s, so about 7.5 MB: more than the 5 MB pieces the test servers use, so it goes up in pieces
   make(VIDEOS.big, ["-c:v", "libx264", "-preset", "ultrafast", "-b:v", "10M", "-minrate", "10M", "-maxrate", "10M",
     "-bufsize", "2M", "-x264-params", "nal-hrd=cbr"]);
+  if (!fs.existsSync(VIDEOS.cover)) execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", VIDEOS.tiny, "-frames:v", "1", "-s", "90x160", VIDEOS.cover]);   // a clip cover
+  // over the 64 MB limit of the test servers; never sent, so its content does not matter
+  if (!fs.existsSync(VIDEOS.huge)) { const fd = fs.openSync(VIDEOS.huge, "w"); fs.ftruncateSync(fd, 65 * 1024 * 1024); fs.closeSync(fd); }
   if (fs.statSync(VIDEOS.big).size < 6 * 1024 * 1024) throw new Error(`${VIDEOS.big} came out smaller than 6 MB`);
 
   // The servers' data folders can only be deleted once the servers have stopped, which is after the tests. So each
