@@ -40,8 +40,9 @@ test.describe("New creator", () => {
     await expect(page.getByRole("tab", { name: /Activity/ })).toHaveAttribute("aria-selected", "true");
   });
 
-  test.fixme("[APP-CRE-01, APP-KEY-05] Enter in the New creator dialog creates the workspace (Q-10)", async ({ app: page }) => {
+  test("[APP-CRE-01, APP-KEY-05] Enter in the New creator dialog creates the workspace (Q-10)", async ({ app: page }) => {
     // Old-UI bug Q-10: the dialog's first button is Cancel, so Enter in a field closes the dialog as Cancel.
+    // Passes only on the React app, which fixes it.
     const name = "Enter " + uid();
     await navItem(page, "New creator").click();
     await dialog(page, "New creator").getByLabel("Name").fill(name);
