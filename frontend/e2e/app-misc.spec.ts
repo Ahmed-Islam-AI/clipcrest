@@ -275,8 +275,8 @@ test.describe("notifications", () => {
     await expect(bell(page)).toContainText("9+");
   });
 
-  test.fixme("[APP-BELL-04] Mark all as read refreshes the list and keeps it open (Q-06)", async ({ page, admin }) => {
-    // Old-UI bug Q-06: Mark all as read closes the panel instead of refreshing it.
+  test("[APP-BELL-04] Mark all as read refreshes the list and keeps it open (Q-06)", async ({ page, admin }) => {
+    // Old-UI bug Q-06: Mark all as read closes the panel instead of refreshing it. Passes only on the React app.
     void admin;
     await openApp(page, "/app", "Home");
     expect((await page.request.post("/api/feedback", { data: { kind: "bug", message: "Mark me " + uid() } })).ok()).toBeTruthy();
@@ -337,10 +337,11 @@ test.describe("feedback, toasts and errors", () => {
     await toLogin;
   });
 
-  test("[APP-ERR-08, APP-SYNC-09] offline: actions show the browser's error, polling stays quiet, and it recovers", async ({ app: page, context }) => {
+  test("[APP-ERR-08, APP-SYNC-09] offline: actions say the server can't be reached, polling stays quiet, and it recovers", async ({ app: page, context }) => {
     await context.setOffline(true);
     await page.getByRole("button", { name: "Pause all posting" }).click();
-    await expect(page.getByText(/Failed to fetch/)).toBeVisible();                 // the browser's own words (Q-12)
+    // Q-12: the old page showed the browser's own "Failed to fetch"; the React app says this instead
+    await expect(page.getByText("Can't reach ClipCrest. Check that it is running.")).toBeVisible();
     await context.setOffline(false);
     await page.getByRole("button", { name: "Pause all posting" }).click();
     await expect(page.getByRole("button", { name: "Resume posting" })).toBeVisible();
