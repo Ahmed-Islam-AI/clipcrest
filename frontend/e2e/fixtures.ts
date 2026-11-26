@@ -2,12 +2,14 @@
    visible text, never by CSS class, id or page structure. The React pages must keep the labels listed in
    e2e/README.md. */
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
-import { test as base, expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
+import { test as base, expect, type APIRequestContext, type Page } from "@playwright/test";
 
 export { expect };
 export const ROOT = path.resolve(import.meta.dirname, "..", "..");
-export const VIDEOS = { tiny: path.join(import.meta.dirname, ".tmp", "tiny.mp4"), big: path.join(import.meta.dirname, ".tmp", "big.mp4") };
+export const VIDEOS = { tiny: path.join(import.meta.dirname, ".tmp", "tiny.mp4"), big: path.join(import.meta.dirname, ".tmp", "big.mp4"),
+  huge: path.join(import.meta.dirname, ".tmp", "huge.mp4"), cover: path.join(import.meta.dirname, ".tmp", "cover.jpg") };
 export const PASSWORD = "e2e-password-123";
 export const REPO = "https://github.com/Ahmed-Islam-AI/clipcrest";
 export const FOLLOW = "https://www.linkedin.com/in/ahmed-islam-ai/";
@@ -47,7 +49,17 @@ export function grantAdmin(email: string, dataDir: string) {
     { cwd: ROOT, env: { ...process.env, CLIPCREST_DATA: dataDir, DATABASE_URL: "", PYTHONIOENCODING: "utf-8" }, stdio: "pipe" });
 }
 
-const randomIp = () => `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 256)}.${1 + Math.floor(Math.random() * 250)}`;
+/** A password-reset link for this account, made on the server the way "Forgot password" makes it. With no mail set
+    up the server prints the email instead of sending it, so the link is read from that print-out. */
+export function resetLink(email: string, dataDir: string): string {
+  const out = execFileSync("uv", ["run", "--frozen", "python", "-c", `from studio import auth, db; db.init(); auth.forgot(${JSON.stringify(email)})`],
+    { cwd: ROOT, env: { ...process.env, CLIPCREST_DATA: dataDir, DATABASE_URL: "", CLIPCREST_SMTP_HOST: "", CLIPCREST_BREVO_API_KEY: "", PYTHONIOENCODING: "utf-8" }, stdio: "pipe" }).toString();
+  const link = out.match(/\/reset\?t=\S+/);
+  if (!link) throw new Error("no reset link printed: " + out);
+  return link[0];
+}
+
+const randomIp =() => `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 256)}.${1 + Math.floor(Math.random() * 250)}`;
 
 type Fixtures = {
   /** The signed-in person: a brand-new account with sign-in on, null with sign-in off (the built-in owner). */
@@ -67,6 +79,12 @@ export const test = base.extend<Fixtures & Options>({
   // Nothing leaves this computer: any other address gets an empty page instead (GitHub, LinkedIn, fonts, players).
   // Pages opened in a new tab still keep their address, so tests can check where a link goes.
   context: async ({ context }, use) => {
+    // The system clipboard is shared by every test running at once, so what pages copy is kept in the page instead.
+    await context.addInitScript(() => {
+      const w = window as any;
+      w.__copied = [];
+      if (navigator.clipboard) navigator.clipboard.writeText = (t: string) => { w.__copied.push(String(t)); return Promise.resolve(); };
+    });
     await context.route(u => !["127.0.0.1", "localhost"].includes(u.hostname),
       r => r.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>Offline test stub</title>" }));
     await use(context);
@@ -98,13 +116,64 @@ export const test = base.extend<Fixtures & Options>({
   },
 });
 
+/* ---------------------------------------------------------------- fixed answers for what can't be made offline */
+/** A JSON file from e2e/fixtures/, shaped like the real API answer. */
+export function fixture<T = any>(name: string): T {
+  return JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "fixtures", name + ".json"), "utf8"));
+}
+/** Answer the link preview (which needs YouTube) for links containing `match`; other links go to the real server. */
+export async function mockPreview(page: Page, match: string, body: object = fixture("preview"), status = 200) {
+  await page.route(u => u.pathname === "/api/preview" && (u.searchParams.get("url") || "").includes(match),
+    r => r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) }));
+}
+/** Answer every /api/sync with this data (creators, jobs, accounts), for states that need a live stream or finished
+    clips. Each answer carries everything, as a real "something changed" answer does. */
+export async function mockSync(page: Page, data: object) {
+  await page.route(u => u.pathname === "/api/sync", r => r.fulfill({ json: data }));
+}
+/** Clip videos, covers and thumbnails from the fixtures: answered with the test video and a still from it. */
+export async function mockMedia(page: Page) {
+  await page.route(u => u.pathname.startsWith("/media/"), r => r.fulfill({ path: /\.mp4$/.test(new URL(r.request().url()).pathname) ? VIDEOS.tiny : VIDEOS.cover }));
+}
+/** Let a write through to nowhere: answer it with `json` and keep the request for checking. */
+export async function fakeWrite(page: Page, method: string, pathRe: RegExp, json: object = { ok: true }) {
+  const seen: { url: string; body: any }[] = [];
+  await page.route(u => pathRe.test(u.pathname), (r, req) => {
+    if (req.method() !== method) return r.fallback();
+    let body = null;
+    try { body = req.postDataJSON(); } catch { /* not JSON */ }
+    seen.push({ url: req.url(), body });
+    return r.fulfill({ json });
+  });
+  return seen;
+}
+/** The real /api/status with some fields changed, for states that need a broken or special server. */
+export async function patchStatus(page: Page, patch: (s: any) => void) {
+  await page.route(u => u.pathname === "/api/status", async r => {
+    const res = await r.fetch();
+    const s = await res.json();
+    patch(s);
+    await r.fulfill({ response: res, json: s });
+  });
+}
+
+/** The text the page last put on the clipboard (see the context fixture). */
+export const copied = (page: Page) => page.evaluate(() => (window as any).__copied.at(-1) as string | undefined);
+
 /* ---------------------------------------------------------------- finding things */
 export const sidebar = (page: Page) => page.getByRole("complementary", { name: "Sidebar" });
-/** The page's main heading: "Home", "All videos", "Settings", "AI usage" or a creator's name. */
-export const title = (page: Page) => page.getByRole("heading", { level: 1 });
-/** A link or button in the sidebar. */
-export const navItem = (page: Page, name: string | RegExp) =>
-  sidebar(page).getByRole("link", { name, exact: typeof name === "string" }).or(sidebar(page).getByRole("button", { name, exact: typeof name === "string" }));
+/** The page's main heading: "Home", "All videos", "Settings", "AI usage" or a creator's name. It is still found
+    while a modal dialog such as the tour is open: a person still sees it, but the React page marks everything
+    behind a modal dialog aria-hidden (the old page did not), which hides it from role queries. */
+export const title = (page: Page) => page.getByRole("heading", { level: 1, includeHidden: true });
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A link or button in the sidebar. A name given as text must start its label: "All videos" also finds "All videos 3". */
+export const navItem = (page: Page, label: string | RegExp) => {
+  const name = typeof label === "string" ? new RegExp("^" + escapeRe(label) + "(\\s|$)") : label;
+  return sidebar(page).getByRole("link", { name }).or(sidebar(page).getByRole("button", { name }));
+};
+/** A creator in the sidebar (its name comes after its picture or first letter). */
+export const creatorItem = (page: Page, name: string) => navItem(page, new RegExp(escapeRe(name)));
 /** The button with the signed-in person (or "Settings" with sign-in off) that opens the account menu. */
 export const meButton = (page: Page) => sidebar(page).getByRole("button", { name: /Settings AI key, connected apps|@/ });
 export const bell = (page: Page) => sidebar(page).getByRole("button", { name: /^Notifications/ });
@@ -139,6 +208,3 @@ export async function pickFiles(page: Page, files: string | string[] | { name: s
   await (await chooser).setFiles(files);
 }
 
-/** A video in the list, found by its title. */
-export const video = (page: Page, name: string | RegExp): Locator =>
-  page.getByRole("region").or(page.getByRole("article")).or(page.getByRole("listitem")).filter({ has: page.getByRole("heading", { name }) }).first();
