@@ -209,12 +209,16 @@ test.describe("the creator picker", () => {
     await expect(chip).toHaveAttribute("aria-expanded", "true");
     await expect(list.getByRole("option", { name: "No creator" })).toHaveAttribute("aria-selected", "true");
     await expect(list.getByRole("option", { name: "No creator" })).toBeVisible();
-    await page.keyboard.press("ArrowDown");                               // moves through the options
-    await expect(list.getByRole("option").first()).toBeFocused();
+    // moves through the options. Checked from wherever the focus is: the old page put it on no option when opening
+    // (so ArrowDown went to the first), the React page puts it on the chosen one (so ArrowDown goes to the next)
+    const focused = list.getByRole("option").and(page.locator(":focus"));
     await page.keyboard.press("ArrowDown");
-    await expect(list.getByRole("option").nth(1)).toBeFocused();
+    await expect(focused).toHaveCount(1);
+    const was = (await focused.textContent())!;
+    await page.keyboard.press("ArrowDown");
+    await expect(focused).not.toHaveText(was);
     await page.keyboard.press("ArrowUp");
-    await expect(list.getByRole("option").first()).toBeFocused();
+    await expect(focused).toHaveText(was);
     await page.keyboard.press("Escape");
     await expect(list).toBeHidden();
     await expect(chip).toBeFocused();
@@ -233,8 +237,9 @@ test.describe("the creator picker", () => {
     await expect(title(page)).toHaveText(name);                          // started from Home: off to that creator
   });
 
-  test.fixme("[APP-COMP-13, APP-KEY-02] opening the picker puts the focus on the chosen option (new: not in section 18)", async ({ app: page }) => {
+  test("[APP-COMP-13, APP-KEY-02] opening the picker puts the focus on the chosen option (new: not in section 18)", async ({ app: page }) => {
     // Old-UI bug (not yet in section 18): focus() runs while the menu is still hidden by its fade-in, so it does not land.
+    // Passes only on the React app, which fixes it.
     await page.getByRole("button", { name: "File under creator" }).click();
     await expect(page.getByRole("listbox").getByRole("option", { name: "No creator" })).toBeFocused();
   });
