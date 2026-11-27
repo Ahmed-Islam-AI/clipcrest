@@ -32,6 +32,7 @@ const statusQuery = {
   queryKey: keys.status,
   queryFn: () => api<Status>("/api/status"),
   retry: false,
+  refetchOnWindowFocus: false,
   staleTime: Infinity, // refreshed by the 15-second timer and by refreshStatus(), never just because a part mounted
 }
 
@@ -105,14 +106,12 @@ function nextWait() {
 export function useSyncEngine() {
   const client = useQueryClient()
   const [synced, setSynced] = useState(false)
-  if (qc !== client) {
-    qc = client
-    // Like the old page: no quiet retries, no reloading on window focus (sync does that itself).
-    client.setDefaultOptions({ queries: { ...client.getDefaultOptions().queries, retry: false, refetchOnWindowFocus: false } })
-  }
   const status = useQuery({ ...statusQuery, refetchInterval: 15000, refetchIntervalInBackground: true })
 
   useEffect(() => {
+    qc = client
+    // Like the old page: no quiet retries, no reloading on window focus (sync does that itself).
+    client.setDefaultOptions({ queries: { ...client.getDefaultOptions().queries, retry: false, refetchOnWindowFocus: false } })
     let stopped = false, timer = 0
     const loop = () => {
       timer = window.setTimeout(async () => {
