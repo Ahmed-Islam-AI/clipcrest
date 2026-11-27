@@ -11,9 +11,18 @@ export class ApiError extends Error {
   }
 }
 
+let leaving = false
+
 /** Signed out while using the app (APP-ERR-07). Upload code that uses XMLHttpRequest calls this on a 401 too. */
 export function signIn() {
-  location.href = "/login"
+  if (!leaving) location.href = "/login"
+}
+
+/** Leave the app on purpose once the session is ended (signed out, account deleted). A request still under way then
+    gets a 401, which must not send the browser to /login instead. */
+export function leave(to = "/") {
+  leaving = true
+  location.href = to
 }
 
 /** The readable message in a failed answer's body. For upload code that reads XMLHttpRequest.responseText. */
